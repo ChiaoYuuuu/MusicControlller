@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from .util import *
 from api.models import Room
 from .models import Vote
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
 class ActiveDeviceView(APIView):
     def get(self, request, format=None):
@@ -36,7 +38,7 @@ class ActiveDeviceView(APIView):
 
 class AuthURL(APIView):
     def get(self, request, fornat=None):
-        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
+        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-playback-state'
 
         url = Request('GET', 'https://accounts.spotify.com/authorize', params={
             'scope': scopes,
@@ -84,6 +86,12 @@ class IsAuthenticated(APIView):
 
 
 class CurrentSong(APIView):
+    def ep_info(self, id):
+        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+        sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)  
+        skibidi = sp.episode(id)
+        print('EP info : ', skibidi)
+
     def get(self, request, format=None):
         room_code = self.request.session.get('room_code')
         room = Room.objects.filter(code=room_code)
@@ -94,42 +102,68 @@ class CurrentSong(APIView):
         host = room.host
         endpoint = "player/currently-playing"
         response = execute_spotify_api_request(host, endpoint)
-        print(response)
+        print("1 RES : ", response, '\n\n\n')
         if 'error' in response or 'item' not in response:
             return Response({}, status=status.HTTP_204_NO_CONTENT)
-
-        item = response.get('item')
-        duration = item.get('duration_ms')
+        playing_type = response.get('currently_playing_type')
         progress = response.get('progress_ms')
-        album_cover = item.get('album').get('images')[0].get('url')
         is_playing = response.get('is_playing')
-        song_id = item.get('id')
+        
+        if playing_type == "track":
+            item = response.get('item')
+            duration = item.get('duration_ms')
+            album_cover = item.get('album').get('images')[0].get('url')
+            song_id = item.get('id')
+            print("URL : ", album_cover)
+            
+            artist_string = ""
 
-        artist_string = ""
+            for i, artist in enumerate(item.get('artists')):
+                if i > 0:
+                    artist_string += ", "
+                name = artist.get('name')
+                artist_string += name
 
-        for i, artist in enumerate(item.get('artists')):
-            if i > 0:
-                artist_string += ", "
-            name = artist.get('name')
-            artist_string += name
+            votes = Vote.objects.filter(room=room, song_id=room.current_song)
+            
+            song = {
+                'title': item.get('name'),
+                'artist': artist_string,
+                'duration': duration,
+                'time': progress,
+                'image_url': album_cover,
+                'is_playing': is_playing,
+                'votes': len(votes),
+                'votes_required' : room.votes_to_skip,
+                'id': song_id
+            }
 
-        votes = Vote.objects.filter(room=room, song_id=room.current_song)
-        print("Vote : ", votes)
-        song = {
-            'title': item.get('name'),
-            'artist': artist_string,
-            'duration': duration,
-            'time': progress,
-            'image_url': album_cover,
-            'is_playing': is_playing,
-            'votes': len(votes),
-            'votes_required' : room.votes_to_skip,
-            'id': song_id
-        }
+        else:            
+            endpoint = "player/queue"
+            response = execute_spotify_api_request(host, endpoint)
+
+            votes = Vote.objects.filter(room=room, song_id=room.current_song)
+            song_id = response.get('currently_playing').get('show').get('id')
+            print('\n\n 2 RES : ', response.get('currently_playing').get('show'))
+            song = {
+                'title': response.get('currently_playing').get('name'),
+                'artist': response.get('currently_playing').get('show').get('publisher'),
+                'duration': response.get('currently_playing').get('duration_ms'),
+                'time': progress,
+                'image_url': response.get('currently_playing').get('show').get('images')[0].get('url'),
+                'is_playing': is_playing,
+                'votes': len(votes),
+                'votes_required' : room.votes_to_skip,
+                'id': song_id
+            }
+            print("SONG : ", song)
 
         self.update_room_song(room, song_id)
 
         return Response(song, status=status.HTTP_200_OK)
+            
+            
+
     
     def update_room_song(self, room, song_id):
             current_song = room.current_song

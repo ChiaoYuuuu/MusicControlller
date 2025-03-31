@@ -78,10 +78,10 @@ def execute_spotify_api_request(session_id, endpoint, post_=False, put_=False):
         put(BASE_URL + endpoint, headers=headers)
 
     response = get(BASE_URL + endpoint, {}, headers=headers)
-    print('Response : ', response)
-    print('Text : ', response.text)
-    print("Endpoint:", BASE_URL + endpoint)
-    print("Headers:", headers)
+    #print('Response : ', response)
+    #print('Text : ', response.text)
+    #print("Endpoint:", BASE_URL + endpoint)
+    #print("Headers:", headers)
     try:
         return response.json()
     except:
