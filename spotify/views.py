@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from .util import *
 from api.models import Room
-from .models import Vote
+from .models import SkipVote
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -21,7 +21,7 @@ class ActiveDeviceView(APIView):
             return Response({'error': 'No session ID found'}, status=status.HTTP_401_UNAUTHORIZED)
 
         response = execute_spotify_api_request(session_id, "me/player/devices")
-        print("Spotify devices API response:", response)
+        #print("Spotify devices API response:", response)
 
         if response.get("Error"):
             return Response({'error': 'Failed to fetch devices'}, status=status.HTTP_400_BAD_REQUEST)
@@ -52,7 +52,6 @@ class AuthURL(APIView):
 
 def spotify_callback(request, format=None):
     code = request.GET.get('code')
-    error = request.GET.get('error')
 
     response = post('https://accounts.spotify.com/api/token', data={
         'grant_type': 'authorization_code',
@@ -61,13 +60,12 @@ def spotify_callback(request, format=None):
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET
     }).json()
-    print('Test Response : ', response) 
+    #print('Test Response : ', response) 
 
     access_token = response.get('access_token')
     token_type = response.get('token_type')
     refresh_token = response.get('refresh_token')
     expires_in = response.get('expires_in')
-    error = response.get('error')
 
     if not request.session.exists(request.session.session_key):
         request.session.create()
@@ -90,7 +88,7 @@ class CurrentSong(APIView):
         client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)  
         skibidi = sp.episode(id)
-        print('EP info : ', skibidi)
+        #print('EP info : ', skibidi)
 
     def get(self, request, format=None):
         room_code = self.request.session.get('room_code')
@@ -102,7 +100,7 @@ class CurrentSong(APIView):
         host = room.host
         endpoint = "player/currently-playing"
         response = execute_spotify_api_request(host, endpoint)
-        print("1 RES : ", response, '\n\n\n')
+        #print("1 RES : ", response, '\n\n\n')
         if 'error' in response or 'item' not in response:
             return Response({}, status=status.HTTP_204_NO_CONTENT)
         playing_type = response.get('currently_playing_type')
@@ -114,7 +112,7 @@ class CurrentSong(APIView):
             duration = item.get('duration_ms')
             album_cover = item.get('album').get('images')[0].get('url')
             song_id = item.get('id')
-            print("URL : ", album_cover)
+            #print("URL : ", album_cover)
             
             artist_string = ""
 
@@ -124,7 +122,7 @@ class CurrentSong(APIView):
                 name = artist.get('name')
                 artist_string += name
 
-            votes = Vote.objects.filter(room=room, song_id=room.current_song)
+            votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
             
             song = {
                 'title': item.get('name'),
@@ -142,9 +140,9 @@ class CurrentSong(APIView):
             endpoint = "player/queue"
             response = execute_spotify_api_request(host, endpoint)
 
-            votes = Vote.objects.filter(room=room, song_id=room.current_song)
+            votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
             song_id = response.get('currently_playing').get('show').get('id')
-            print('\n\n 2 RES : ', response.get('currently_playing').get('show'))
+            #print('\n\n 2 RES : ', response.get('currently_playing').get('show'))
             song = {
                 'title': response.get('currently_playing').get('name'),
                 'artist': response.get('currently_playing').get('show').get('publisher'),
@@ -156,7 +154,7 @@ class CurrentSong(APIView):
                 'votes_required' : room.votes_to_skip,
                 'id': song_id
             }
-            print("SONG : ", song)
+            #print("SONG : ", song)
 
         self.update_room_song(room, song_id)
 
@@ -171,7 +169,7 @@ class CurrentSong(APIView):
             if current_song != song_id:
                 room.current_song = song_id
                 room.save(update_fields=['current_song'])
-                votes = Vote.objects.filter(room=room).delete()
+                votes = SkipVote.objects.filter(room=room).delete()
     
 class PauseSong(APIView):
     def put(self, request, format=None):
@@ -196,14 +194,31 @@ class SkipSong(APIView):
     def post(self, request, format=None):
         room_code = self.request.session.get('room_code')
         room = Room.objects.filter(code=room_code)[0]
-        votes = Vote.objects.filter(room=room, song_id=room.current_song)
+        votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
         votes_needed = room.votes_to_skip
 
         if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
             votes.delete()
             skip_song(room.host)
         else:
-            vote = Vote(user=self.request.session.session_key,
+            vote = SkipVote(user=self.request.session.session_key,
+                        room=room, song_id=room.current_song)
+            vote.save()
+
+        return Response({}, status.HTTP_204_NO_CONTENT)
+    
+class PreviouSong(APIView):
+    def post(self, request, format=None):
+        room_code = self.request.session.get('room_code')
+        room = Room.objects.filter(code=room_code)[0]
+        votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
+        votes_needed = room.votes_to_skip
+
+        if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
+            votes.delete()
+            previous_song(room.host)
+        else:
+            vote = SkipVote(user=self.request.session.session_key,
                         room=room, song_id=room.current_song)
             vote.save()
 

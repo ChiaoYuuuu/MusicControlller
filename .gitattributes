@@ -1,0 +1,23 @@
+# Handle line endings automatically for all files
+* text=auto
+
+# Force LF line endings for source files
+*.py text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+
+# Windows executables - keep binary
+*.exe binary
+*.dll binary
+*.so binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

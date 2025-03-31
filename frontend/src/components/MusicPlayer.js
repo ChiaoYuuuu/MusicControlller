@@ -9,6 +9,8 @@ import {
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PauseIcon from "@material-ui/icons/Pause";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
+import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
+
 
 export default class MusicPlayer extends Component {
   constructor(props) {
@@ -21,6 +23,14 @@ export default class MusicPlayer extends Component {
       headers: { "Content-Type": "application/json" },
     };
     fetch("/spotify/skip", requestOptions);
+  }
+
+  previouSong() {
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    };
+    fetch("/spotify/previous", requestOptions);
   }
 
   pauseSong() {
@@ -56,6 +66,9 @@ export default class MusicPlayer extends Component {
               {this.props.artist}
             </Typography>
             <div>
+              <IconButton onClick={() => this.previouSong()}>
+                <SkipPreviousIcon /> {this.props.votes ?? 0} / {this.props.votes_required ?? 0}
+              </IconButton>
               <IconButton
                 onClick={() => {
                   this.props.is_playing ? this.pauseSong() : this.playSong();

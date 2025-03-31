@@ -10,4 +10,5 @@ urlpatterns = [
     path('play', PlaySong.as_view()),
     path('active-device', ActiveDeviceView.as_view()),
     path('skip', SkipSong.as_view()),
+    path('previous', PreviouSong.as_view()),
 ]
