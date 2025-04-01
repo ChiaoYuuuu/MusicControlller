@@ -9,8 +9,7 @@ import {
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PauseIcon from "@material-ui/icons/Pause";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
-import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-
+import SkipPreviousIcon from "@material-ui/icons/SkipPrevious";
 
 export default class MusicPlayer extends Component {
   constructor(props) {
@@ -67,7 +66,8 @@ export default class MusicPlayer extends Component {
             </Typography>
             <div>
               <IconButton onClick={() => this.previouSong()}>
-                <SkipPreviousIcon /> {this.props.votes ?? 0} / {this.props.votes_required ?? 0}
+                <SkipPreviousIcon /> {this.props.previous_votes ?? 0} /{" "}
+                {this.props.votes_required ?? 0}
               </IconButton>
               <IconButton
                 onClick={() => {
@@ -77,7 +77,8 @@ export default class MusicPlayer extends Component {
                 {this.props.is_playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
               <IconButton onClick={() => this.skipSong()}>
-                <SkipNextIcon /> {this.props.votes ?? 0} / {this.props.votes_required ?? 0}
+                <SkipNextIcon /> {this.props.skip_votes ?? 0} /{" "}
+                {this.props.votes_required ?? 0}
               </IconButton>
             </div>
           </Grid>

@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from .util import *
 from api.models import Room
-from .models import SkipVote
+from .models import SkipVote, PreviousVote
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -84,11 +84,6 @@ class IsAuthenticated(APIView):
 
 
 class CurrentSong(APIView):
-    def ep_info(self, id):
-        client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-        sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)  
-        skibidi = sp.episode(id)
-        #print('EP info : ', skibidi)
 
     def get(self, request, format=None):
         room_code = self.request.session.get('room_code')
@@ -106,6 +101,10 @@ class CurrentSong(APIView):
         playing_type = response.get('currently_playing_type')
         progress = response.get('progress_ms')
         is_playing = response.get('is_playing')
+        skip_votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
+        previous_votes = PreviousVote.objects.filter(room=room, song_id=room.current_song)
+        print("SKIP : ", skip_votes)
+        print("PREVIOUS : ", previous_votes)
         
         if playing_type == "track":
             item = response.get('item')
@@ -122,7 +121,7 @@ class CurrentSong(APIView):
                 name = artist.get('name')
                 artist_string += name
 
-            votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
+            
             
             song = {
                 'title': item.get('name'),
@@ -131,7 +130,8 @@ class CurrentSong(APIView):
                 'time': progress,
                 'image_url': album_cover,
                 'is_playing': is_playing,
-                'votes': len(votes),
+                'skip_votes': len(skip_votes),
+                'previous_votes': len(previous_votes),
                 'votes_required' : room.votes_to_skip,
                 'id': song_id
             }
@@ -140,9 +140,8 @@ class CurrentSong(APIView):
             endpoint = "player/queue"
             response = execute_spotify_api_request(host, endpoint)
 
-            votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
-            song_id = response.get('currently_playing').get('show').get('id')
-            #print('\n\n 2 RES : ', response.get('currently_playing').get('show'))
+            song_id = response.get('currently_playing').get('uri')
+            #print('\n\n 2 RES : ', response.get('currently_playing'))
             song = {
                 'title': response.get('currently_playing').get('name'),
                 'artist': response.get('currently_playing').get('show').get('publisher'),
@@ -150,7 +149,8 @@ class CurrentSong(APIView):
                 'time': progress,
                 'image_url': response.get('currently_playing').get('show').get('images')[0].get('url'),
                 'is_playing': is_playing,
-                'votes': len(votes),
+                'skip_votes': len(skip_votes),
+                'previous_votes': len(previous_votes),
                 'votes_required' : room.votes_to_skip,
                 'id': song_id
             }
@@ -159,8 +159,6 @@ class CurrentSong(APIView):
         self.update_room_song(room, song_id)
 
         return Response(song, status=status.HTTP_200_OK)
-            
-            
 
     
     def update_room_song(self, room, song_id):
@@ -169,7 +167,8 @@ class CurrentSong(APIView):
             if current_song != song_id:
                 room.current_song = song_id
                 room.save(update_fields=['current_song'])
-                votes = SkipVote.objects.filter(room=room).delete()
+                skip_votes = SkipVote.objects.filter(room=room).delete()
+                previous_votes = PreviousVote.objects.filter(room=room).delete()
     
 class PauseSong(APIView):
     def put(self, request, format=None):
@@ -194,32 +193,68 @@ class SkipSong(APIView):
     def post(self, request, format=None):
         room_code = self.request.session.get('room_code')
         room = Room.objects.filter(code=room_code)[0]
+
+        user_voted = SkipVote.objects.filter(
+            user=request.session.session_key,
+            room=room,
+            song_id=room.current_song
+        ).exists()
+
         votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
         votes_needed = room.votes_to_skip
 
-        if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
+        print("Votes so far:", len(votes), "User already voted:", user_voted)
+        if user_voted:
+            if request.session.session_key == room.host or len(votes) >= votes_needed:
+                votes.delete()
+                skip_song(room.host)
+                return Response({}, status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Already voted'}, status=status.HTTP_200_OK)
+
+        if request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
             votes.delete()
             skip_song(room.host)
         else:
-            vote = SkipVote(user=self.request.session.session_key,
-                        room=room, song_id=room.current_song)
+            vote = SkipVote(
+                user=request.session.session_key,
+                room=room,
+                song_id=room.current_song
+            )
             vote.save()
 
         return Response({}, status.HTTP_204_NO_CONTENT)
+
     
 class PreviouSong(APIView):
     def post(self, request, format=None):
         room_code = self.request.session.get('room_code')
         room = Room.objects.filter(code=room_code)[0]
-        votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
+        user_voted = PreviousVote.objects.filter(
+            user=request.session.session_key,
+            room=room,
+            song_id=room.current_song
+        ).exists()
+
+        votes = PreviousVote.objects.filter(room=room, song_id=room.current_song)
         votes_needed = room.votes_to_skip
 
-        if self.request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
+        if user_voted:
+            if request.session.session_key == room.host or len(votes) >= votes_needed:
+                votes.delete()
+                previous_song(room.host)
+                return Response({}, status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Already voted'}, status=status.HTTP_200_OK)
+
+        if request.session.session_key == room.host or len(votes) + 1 >= votes_needed:
             votes.delete()
             previous_song(room.host)
         else:
-            vote = SkipVote(user=self.request.session.session_key,
-                        room=room, song_id=room.current_song)
+            vote = PreviousVote(
+                user=request.session.session_key,
+                room=room,
+                song_id=room.current_song
+            )
             vote.save()
 
         return Response({}, status.HTTP_204_NO_CONTENT)
+        
