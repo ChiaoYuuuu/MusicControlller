@@ -20,8 +20,8 @@ pip install -r requirements.txt
 2. Set up environment variables
 Make sure to configure your .env file or Django settings with your Spotify credentials:
 env
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SPOTIFY_CLIENT_ID=your_spotify_client_id  
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/spotify/redirect
 
 3. Run Django backend
