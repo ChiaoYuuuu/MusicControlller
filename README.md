@@ -7,7 +7,7 @@ This project is based on Tech With Tim's Music Controller Web App Tutorial, with
 - ✅ Create and join rooms via room code
 - ✅ Synchronized playback for **Spotify music**  
 - ✅ **Synchronized playback for Spotify podcasts** *(new)*
-- ✅ **Host playback control and guest voting** *(new)*  
+- ✅ Host playback control and guest voting
 - ✅ Vote to skip to the next track
 - ✅ **Vote to go back to the previous track** *(new)*  
 - ✅ **JWT-based login and logout system** *(new)*
