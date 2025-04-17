@@ -1,6 +1,6 @@
 # 🎵 Spotify Group Listening App
 A web application that allows users in the same virtual room to synchronously listen to Spotify content—including music and podcasts—with friends. 
-Users can vote to skip to the next or previous track, and the host can control playback in real-time.
+Users can vote to skip to the next or previous track, and the host can control playback in real-time.  
 This project is based on Tech With Tim's Music Controller Web App Tutorial, with several enhancements to support modern Spotify features and user authentication.
 
 ## 🚀 Features
