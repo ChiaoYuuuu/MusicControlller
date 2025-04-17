@@ -28,15 +28,15 @@ SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/spotify/redirect
 bash
 python manage.py runserver
 
-4. Install frontend dependencies and compile
-Navigate to your frontend/ directory and run:
-bash
-npm install
-npm run dev
-This will start the Webpack development server to watch for changes in your React frontend.
+4. Install frontend dependencies and compile  
+Navigate to your frontend/ directory and run:  
+bash  
+npm install  
+npm run dev  
+This will start the Webpack development server to watch for changes in your React frontend.  
 
 ### Clone the repository
-bash
+bash  
 git clone https://github.com/ChiaoYuuuu/MusicControlller.git  
 cd MusicControlller
 
