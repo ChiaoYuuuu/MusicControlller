@@ -37,14 +37,14 @@ This will start the Webpack development server to watch for changes in your Reac
 
 ### Clone the repository
 bash
-git clone https://github.com/ChiaoYuuuu/MusicControlller.git
+git clone https://github.com/ChiaoYuuuu/MusicControlller.git  
 cd MusicControlller
 
 ## 📌 Notes
-You must have a Spotify Premium account for playback to work.
-Spotify authentication uses OAuth2 and is tied to each user’s Spotify account.
-Rooms are tied to Django-authenticated users, and only one room per host is allowed.
+You must have a Spotify Premium account for playback to work.  
+Spotify authentication uses OAuth2 and is tied to each user’s Spotify account.  
+Rooms are tied to Django-authenticated users, and only one room per host is allowed.  
 
 ## 📚 Credit
-Originally inspired by Tech With Tim’s tutorial
-Enhancements, feature upgrades, and bug fixes by ChiaoYuuuu
+Originally inspired by Tech With Tim’s tutorial  
+Enhancements, feature upgrades, and bug fixes by ChiaoYuuuu  
