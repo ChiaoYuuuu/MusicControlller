@@ -3,4 +3,4 @@ djangorestframework>=3.13.0
 requests>=2.25.0
 spotipy>=2.19.0
 python-dotenv>=1.0.0
-djangorestframework-simplejwt
+djangorestframework-simplejwt>=5.2.2
