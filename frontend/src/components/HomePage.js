@@ -6,34 +6,126 @@ import Room from "./Room";
 import { Grid, Button, ButtonGroup, Typography } from "@material-ui/core";
 import { Link, useParams, Navigate } from "react-router-dom";
 import Info from "./info";
+import Register from "./Register";
+import Login from "./Login";
+import Logout from "./Logout";
+import SpotifyConflict from "./SpotifyConflict";
+import RoomCheckPage from "./RoomCheckPage";
 
-
-function RoomWrapper(props){
-  let { roomCode } = useParams();
+function RoomWrapper(props) {
+  const { roomCode } = useParams();
   return <Room {...props} roomCode={roomCode} />;
-};
+}
 
+function shouldRefreshToken(token) {
+  if (!token) return false;
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  const exp = payload.exp;
+  const currentTime = Math.floor(Date.now() / 1000);
+  return exp - currentTime < 30;
+}
+
+function refreshAccessToken() {
+  const refresh = localStorage.getItem("refresh");
+
+  fetch("/api/token-refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh: refresh }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.access) {
+        localStorage.setItem("access", data.access);
+        console.log("JWT token refreshed");
+      } else {
+        console.warn("Failed to refresh token", data);
+      }
+    })
+    .catch((error) => {
+      console.error("Refresh token error:", error);
+    });
+}
 
 export default class HomePage extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      roomCode: null,
+      isAuthenticated: !!localStorage.getItem("access"),
+      roomCode: "",
+      loading: true,
     };
     this.clearRoomCode = this.clearRoomCode.bind(this);
+    this.renderHomePage = this.renderHomePage.bind(this);
+    console.log("constructor access : ", localStorage.getItem("access"));
   }
 
   async componentDidMount() {
-    fetch("/api/user-in-room")
-      .then((response) => response.json())
-      .then((data) => {
+    const accessToken = localStorage.getItem("access");
+
+    if (
+      localStorage.getItem("room_code") === null ||
+      localStorage.getItem("room_code") === "undefined" ||
+      localStorage.getItem("room_code") === "null"
+    ) {
+      localStorage.setItem("room_code", "");
+    }
+
+    if (accessToken) {
+      const requestOptions = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      };
+
+      try {
+        const response = await fetch("/api/user-in-room", requestOptions);
+        const data = await response.json();
+        console.log("🎯 Got room code from API:", data.code);
+        localStorage.setItem("room_code", data.code);
+
+        console.log("/api/user-in-room : isAuthenticated: true");
         this.setState({
+          isAuthenticated: true,
           roomCode: data.code,
+          loading: false,
         });
+      } catch (err) {
+        console.warn("User not in room or API failed:", err);
+        console.log("/api/user-in-room : isAuthenticated: ", true);
+        this.setState({
+          isAuthenticated: true,
+          roomCode: "",
+          loading: false,
+        });
+      }
+    } else {
+      console.log(
+        "/api/user-in-room  accessToken FAILED : isAuthenticated: false"
+      );
+      this.setState({
+        isAuthenticated: false,
+        roomCode: "",
+        loading: false,
       });
+    }
+
+    this.tokenInterval = setInterval(() => {
+      const access = localStorage.getItem("access");
+      if (shouldRefreshToken(access)) {
+        refreshAccessToken();
+      }
+    }, 1000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.tokenInterval);
   }
 
   renderHomePage() {
+    console.log("Render Home : ", this.state.isAuthenticated);
     return (
       <Grid container spacing={3}>
         <Grid item xs={12} align="center">
@@ -42,47 +134,94 @@ export default class HomePage extends Component {
           </Typography>
         </Grid>
         <Grid item xs={12} align="center">
-          <ButtonGroup disableElevation variant="contained" color="primary">
-            <Button color="primary" to="/join" component={Link}>
-              Join a Room
-            </Button>
-            <Button color="default" to="/info" component={Link}>
-              Info
-            </Button>           
-            <Button color="secondary" to="/create" component={Link}>
-              Create a Room
-            </Button>
-          </ButtonGroup>
+          {this.state.isAuthenticated ? (
+            <ButtonGroup disableElevation variant="contained" color="primary">
+              <Button color="primary" to="/join" component={Link}>
+                Join a Room
+              </Button>
+              <Button color="default" to="/info" component={Link}>
+                Info
+              </Button>
+              <Button color="secondary" to="/create" component={Link}>
+                Create a Room
+              </Button>
+              <Button color="default" to="/logout" component={Link}>
+                Logout
+              </Button>
+            </ButtonGroup>
+          ) : (
+            <>
+              <Button color="primary" to="/login" component={Link}>
+                Login
+              </Button>
+              <Button color="secondary" to="/register" component={Link}>
+                Register
+              </Button>
+            </>
+          )}
         </Grid>
       </Grid>
     );
   }
 
   clearRoomCode() {
-    this.setState({
-      roomCode: null,
-    });
+    localStorage.removeItem("room_code");
   }
 
-
   render() {
+    console.log("render home");
+    console.log("current path:", window.location.pathname);
+    console.log("state roomcode: ", this.state.roomCode);
+    console.log("state loading: ", this.state.loading);
+    //throw new Error("Room not found");
     return (
       <div className="center">
         <Router>
           <Routes>
-            <Route path="/" element={this.state.roomCode ? (
-              <Navigate to={`/room/${this.state.roomCode}`} /> ) : (this.renderHomePage()
-            )} />
+            <Route
+              path="/"
+              element={
+                this.state.loading ? (
+                  <div>Loading...</div>
+                ) : this.state.roomCode &&
+                  this.state.roomCode !== "null" &&
+                  this.state.roomCode !== "undefined" &&
+                  this.state.roomCode !== "" ? (
+                  <Navigate to={`/room/${this.state.roomCode}`} />
+                ) : (
+                  this.renderHomePage()
+                )
+              }
+            />
+
+            {this.state.loading ? null : (
+              <Route
+                path="/room/:roomCode"
+                element={
+                  <RoomWrapper
+                    leaveRoomCallback={this.clearRoomCode}
+                    roomCodeFromState={this.state.roomCode}
+                  />
+                }
+              />
+            )}
+
+            <Route path="/room-check/:roomCode" element={<RoomCheckPage />} />
             <Route path="/join/*" element={<RoomJoinPage />} />
             <Route path="/info/" element={<Info />} />
             <Route path="/create/*" element={<CreateRoomPage />} />
-            <Route path="/room/:roomCode" element={<RoomWrapper leaveRoomCallback={this.clearRoomCode} />} />
+            <Route path="/register/" element={<Register />} />
+            <Route path="/login/" element={<Login />} />
+            <Route path="/logout/" element={<Logout />} />
+            <Route path="/spotify-conflict/" element={<SpotifyConflict />} />
           </Routes>
         </Router>
       </div>
     );
   }
 }
-
-
-
+//ROUTE下半段 :
+//<Route
+//path="/room/:roomCode"
+//element={<RoomWrapper leaveRoomCallback={this.clearRoomCode} />}
+///>

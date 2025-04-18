@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { TextField, Button, Grid, Typography } from "@material-ui/core";
 import { Link } from "react-router-dom";
-import { withRouter } from "./utils/withRouter";  // ✅ 改為正確導入
+import { withRouter } from "./utils/withRouter";
 
 class RoomJoinPage extends Component {
   constructor(props) {
@@ -22,15 +22,24 @@ class RoomJoinPage extends Component {
   }
 
   roomButtonPressed() {
+    const accessToken = localStorage.getItem("access");
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: JSON.stringify({ code: this.state.roomCode }),
     };
     fetch("/api/join-room", requestOptions)
       .then((response) => {
         if (response.ok) {
-          this.props.navigate(`/room/${this.state.roomCode}`);  // ✅ 這裡的 `navigate` 來自 `withRouter`
+          console.log("Room Join Room Code : ", this.state.roomCode);
+          localStorage.setItem("room_code", this.state.roomCode);
+          if (this.state.roomCode && this.state.roomCode !== "undefined") {
+            console.log("222222222222 room : ", this.state.roomCode);
+            this.props.navigate(`/room/${this.state.roomCode}`);
+          }
         } else {
           this.setState({ error: "Room not found." });
         }
@@ -56,7 +65,11 @@ class RoomJoinPage extends Component {
           />
         </Grid>
         <Grid item xs={12} align="center">
-          <Button variant="contained" color="primary" onClick={this.roomButtonPressed}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={this.roomButtonPressed}
+          >
             Enter Room
           </Button>
         </Grid>
@@ -70,4 +83,4 @@ class RoomJoinPage extends Component {
   }
 }
 
-export default withRouter(RoomJoinPage);  // ✅ 用 `withRouter` 包裝 `RoomJoinPage`
+export default withRouter(RoomJoinPage);

@@ -8,6 +8,7 @@ class SpotifyToken(models.Model):
     access_token = models.CharField(max_length=150)
     expires_in = models.DateTimeField()
     token_type = models.CharField(max_length=50)
+    spotify_user_id = models.CharField(max_length=191, unique=True, null=True, blank=True)
 
 class SkipVote(models.Model):
     user = models.CharField(max_length=50, unique=True)

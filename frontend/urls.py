@@ -9,5 +9,9 @@ urlpatterns = [
     path('create', index),
     path('info', index),
     path('room/<str:roomCode>', index),
-
+    path('register', index),
+    path('login', index),
+    path('logout', index),
+    path('spotify-conflict', index),
+    path('room-check/<str:roomCode>', index)
 ]

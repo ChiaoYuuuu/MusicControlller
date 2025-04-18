@@ -26,6 +26,13 @@ class CreateRoomPage extends Component {
     updateCallback: () => {},
   };
 
+  async componentDidMount() {
+    console.log(
+      "🎯Create Current room_code in localStorage:",
+      localStorage.getItem("room_code")
+    );
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -54,25 +61,52 @@ class CreateRoomPage extends Component {
   }
 
   handleRoomButtonPressed() {
+    const accessToken = localStorage.getItem("access");
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: JSON.stringify({
         votes_to_skip: this.state.votesToSkip,
         guest_can_pause: this.state.guestCanPause,
       }),
     };
     fetch("/api/create-room", requestOptions)
-      .then((response) => response.json())
+      .then(async (response) => {
+        if (!response.ok) {
+          //console.log("Create Room - api/create-room : create success");
+          const err = await response.json();
+          throw new Error(err.detail || "Failed to create room");
+        }
+        //console.log("Create Room - api/create-room : room exist  ", response);
+        return response.json();
+      })
       .then((data) => {
-        this.props.navigate(`/room/${data.code}`);
+        console.log("Create Room : ", data.code);
+        localStorage.setItem("room_code", data.code);
+        console.log("Create Room code : ", localStorage.getItem("room_code"));
+        if (data.code && data.code !== "undefined") {
+          console.log("111111111 room : ", data.code);
+          this.props.navigate(`/room/${data.code}`);
+        }
+      })
+      .catch((error) => {
+        //console.error("Room creation failed:", error.message);
+        alert("Failed to create room: " + error.message);
       });
   }
 
   handleUpdateButtonPressed() {
+    const accessToken = localStorage.getItem("access");
+
     const requestOptions = {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: JSON.stringify({
         votes_to_skip: this.state.votesToSkip,
         guest_can_pause: this.state.guestCanPause,

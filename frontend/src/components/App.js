@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import { render } from "react-dom";
 import HomePage from "./HomePage";
+import { render } from "react-dom";
 
 export default class App extends Component {
   constructor(props) {
@@ -15,6 +15,5 @@ export default class App extends Component {
     );
   }
 }
-
 const appDiv = document.getElementById("app");
 render(<App />, appDiv);

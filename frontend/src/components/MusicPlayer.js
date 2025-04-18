@@ -17,35 +17,107 @@ export default class MusicPlayer extends Component {
   }
 
   skipSong() {
+    const accessToken = localStorage.getItem("access");
+    const roomCode = localStorage.getItem("room_code");
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ room_code: roomCode }),
     };
-    fetch("/spotify/skip", requestOptions);
+    fetch("/spotify/skip", requestOptions)
+      .then((response) => {
+        if (response.status === 204) {
+          console.log("Skip successfully.");
+        } else if (response.status === 403) {
+          console.log("Not allowed to skip.");
+        } else {
+          console.log("Failed to skip.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error in skipSong:", err);
+      });
   }
 
   previouSong() {
+    const accessToken = localStorage.getItem("access");
+    const roomCode = localStorage.getItem("room_code");
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ room_code: roomCode }),
     };
-    fetch("/spotify/previous", requestOptions);
+    fetch("/spotify/previous", requestOptions)
+      .then((response) => {
+        if (response.status === 204) {
+          console.log("Previous successfully.");
+        } else if (response.status === 403) {
+          console.log("Changing to a previous one is not allowed.");
+        } else {
+          console.log("Unable to change to previous one.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error in previousSong:", err);
+      });
   }
 
   pauseSong() {
+    const accessToken = localStorage.getItem("access");
+    const roomCode = localStorage.getItem("room_code");
     const requestOptions = {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ room_code: roomCode }),
     };
-    fetch("/spotify/pause", requestOptions);
+    fetch("/spotify/pause", requestOptions)
+      .then((response) => {
+        if (response.status === 204) {
+          console.log("Paused successfully.");
+        } else if (response.status === 403) {
+          console.log("Not allowed to pause.");
+        } else {
+          console.log("Failed to pause.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error in pauseSong:", err);
+      });
   }
 
   playSong() {
+    const accessToken = localStorage.getItem("access");
+    const roomCode = localStorage.getItem("room_code");
     const requestOptions = {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ room_code: roomCode }),
     };
-    fetch("/spotify/play", requestOptions);
+    fetch("/spotify/play", requestOptions)
+      .then((response) => {
+        if (response.status === 204) {
+          console.log("Play successfully.");
+        } else if (response.status === 403) {
+          console.log("Not allowed to play.");
+        } else {
+          console.log("Failed to play.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error in playSong:", err);
+      });
   }
 
   render() {
