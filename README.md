@@ -1,5 +1,5 @@
 # 🎵 Spotify Group Listening App
-A web application that allows users in the same virtual room to synchronously listen to Spotify content—including music and podcasts—with friends. 
+A web application that allows users in the same virtual room to synchronously listen to Spotify content—including music and podcasts—with friends.  
 Users can vote to skip to the next or previous track, and the host can control playback in real-time.  
 This project is based on Tech With Tim's Music Controller Web App Tutorial, with several enhancements to support modern Spotify features and user authentication.
 
@@ -11,40 +11,59 @@ This project is based on Tech With Tim's Music Controller Web App Tutorial, with
 - ✅ Vote to skip to the next track
 - ✅ **Vote to go back to the previous track** *(new)*  
 - ✅ **JWT-based login and logout system** *(new)*
+- ✅ **Oracle database integration for storing Spotify charts** *(new)*
+- ✅ **Top 10 songs display by country (TW, JP, KR, US)** *(new)*
+
+## 📊 Top Charts UI
+The homepage now includes a new feature for viewing Top 10 Spotify songs per region using dropdown selection.
+
+<img width="330" alt="image" src="https://github.com/user-attachments/assets/16e81e94-87ab-42e4-809c-1b463c352757" />
+
+- Countries supported: TW, JP, KR, US
+- Data is fetched from Oracle database and displayed dynamically
+- Dropdown allows user to switch country
+- Songs shown in scrollable card with responsive layout
 
 ## 🛠️ Setup Instructions
-1. Install backend dependencies
-bash
+
+### 1. Clone the repository
+git clone https://github.com/ChiaoYuuuu/MusicControlller.git  
+cd MusicControlller
+
+### 2. Install backend dependencies
 pip install -r requirements.txt
 
-2. Set up environment variables
-Make sure to configure your .env file or Django settings with your Spotify credentials:  
-env  
+### 3. Set up environment variables
+Create a .env file and fill in the following:
+
 SPOTIFY_CLIENT_ID=your_spotify_client_id  
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/spotify/redirect
 
-3. Run Django backend
-bash
+DB_USER=your_oracle_user
+DB_PASSWORD=your_oracle_password
+DB_DSN=your_oracle_dsn
+
+### 4. Run Django backend
+python manage.py makemigrations
+python manage.py migrate
 python manage.py runserver
 
-4. Install frontend dependencies and compile  
-Navigate to your frontend/ directory and run:  
-bash  
-npm install  
-npm run dev  
-This will start the Webpack development server to watch for changes in your React frontend.  
+### 5. Install frontend dependencies and start development server
+Navigate to the frontend/ directory:
 
-### Clone the repository
-bash  
-git clone https://github.com/ChiaoYuuuu/MusicControlller.git  
-cd MusicControlller
+npm install  
+npm run dev
 
 ## 📌 Notes
-You must have a Spotify Premium account for playback to work.  
-Spotify authentication uses OAuth2 and is tied to each user’s Spotify account.  
-Rooms are tied to Django-authenticated users, and only one room per host is allowed.  
+You must have a Spotify Premium account for playback to work
+Spotify authentication uses OAuth2
+Each user can create one room only
+Oracle DB must be running locally or via Docker for Top 10 feature
 
 ## 📚 Credit
-Originally inspired by Tech With Tim’s tutorial  
-Enhancements, feature upgrades, and bug fixes by ChiaoYuuuu  
+Originally inspired by Tech With Tim’s tutorial
+Enhancements, feature upgrades, and bug fixes by ChiaoYuuuu
+
+
+
