@@ -107,8 +107,15 @@ class Room extends Component {
       .then((data) => {
         this.setState({ spotifyAuthenticated: data.status });
         console.log("authenticateSpotify : ", data.status);
+
         if (!data.status) {
-          fetch("/spotify/get-auth-url")
+          fetch("/spotify/get-auth-url", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("access")}`,
+            },
+          })
             .then((response) => response.json())
             .then((data) => {
               console.log("AFTER spotify/get-auth-url data.url:", data.url);
@@ -181,10 +188,10 @@ class Room extends Component {
     })
       .then((response) => {
         if (!response.ok || response.status === 204) {
-          //console.log("Get Current Song faild");
+          console.log("Get Current Song faild");
           return {};
         } else {
-          //console.log("Get Current Song success");
+          console.log("Get Current Song success");
           return response.json();
         }
       })

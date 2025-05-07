@@ -48,6 +48,7 @@ def is_spotify_authenticated(user_id):
             refresh_spotify_token(user_id)
 
         return True
+    print("is_spotify_authenticated FAILED")
     return False
 
 
@@ -83,6 +84,8 @@ def execute_spotify_api_request(user_id, endpoint, post_=False, put_=False):
     if not is_spotify_authenticated(user_id):
         return {"execute_spotify_api_request - error": "User not authenticated"}
     tokens = get_user_tokens(user_id)
+    print("🪪 Access token:", tokens.access_token)
+
     if not tokens:
         return {'Error': 'User not authenticated'}
 
@@ -93,13 +96,13 @@ def execute_spotify_api_request(user_id, endpoint, post_=False, put_=False):
         return post(BASE_URL + endpoint, headers=headers)
     if put_:
         return put(BASE_URL + endpoint, headers=headers)
-    else:
-        res = get(BASE_URL + endpoint, headers=headers)
+    #else:
+    #    res = get(BASE_URL + endpoint, headers=headers)
         #print("Spotify API response : ", res.status_code, res.text)
 
     response = get(BASE_URL + endpoint, {}, headers=headers)
-    #print('Response : ', response)
-    #print('Text : ', response.text)
+    print('Response : ', response)
+    print('Text : ', response.text)
     #print("Endpoint:", BASE_URL + endpoint)
     #print("Headers:", headers)
     try:

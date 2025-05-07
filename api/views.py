@@ -1,6 +1,6 @@
 from rest_framework import generics, status
 from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
-from .models import Room
+from .models import Room, TopCharts
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import JsonResponse
@@ -13,6 +13,20 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 import json
 
+class TopSong(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        country_codes = ["TW", "JP", "KR", "US"]
+        result = {}
+        for code in country_codes:
+            result[code] = list(
+                TopCharts.objects.using('oracle')
+                .filter(country_code=code)
+                .order_by('-retrieved_at', 'rank')[:10]
+                .values()
+            )
+        return Response(result)
 
 class TokenRefresh(APIView):
     def post(self, request):

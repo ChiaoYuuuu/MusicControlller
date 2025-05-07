@@ -6,16 +6,6 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const [shouldRedirect, setShouldRedirect] = useState(false);
-
-  useEffect(() => {
-    if (shouldRedirect && localStorage.getItem("access")) {
-      console.log("register access : ", localStorage.getItem("access"));
-      //throw new Error("Room not found");
-      //navigate("/");
-      window.location.href = "/";
-    }
-  }, [shouldRedirect, navigate]);
 
   const register = async () => {
     try {
@@ -27,7 +17,7 @@ function Register() {
       alert("Registration successful!");
       localStorage.setItem("access", res.data.access);
       localStorage.setItem("refresh", res.data.refresh);
-      setShouldRedirect(true);
+      window.location.href = "/";
     } catch (err) {
       alert(
         "Registration failed: " + (err.response?.data?.error || err.message)

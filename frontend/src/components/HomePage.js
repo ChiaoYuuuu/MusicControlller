@@ -11,6 +11,7 @@ import Login from "./Login";
 import Logout from "./Logout";
 import SpotifyConflict from "./SpotifyConflict";
 import RoomCheckPage from "./RoomCheckPage";
+import TopCharts from "./TopCharts";
 
 function RoomWrapper(props) {
   const { roomCode } = useParams();
@@ -62,14 +63,6 @@ export default class HomePage extends Component {
 
   async componentDidMount() {
     const accessToken = localStorage.getItem("access");
-
-    if (
-      localStorage.getItem("room_code") === null ||
-      localStorage.getItem("room_code") === "undefined" ||
-      localStorage.getItem("room_code") === "null"
-    ) {
-      localStorage.setItem("room_code", "");
-    }
 
     if (accessToken) {
       const requestOptions = {
@@ -126,11 +119,12 @@ export default class HomePage extends Component {
 
   renderHomePage() {
     console.log("Render Home : ", this.state.isAuthenticated);
+    
     return (
       <Grid container spacing={3}>
         <Grid item xs={12} align="center">
           <Typography variant="h3" compact="h3">
-            House Party
+            Spotify Controller
           </Typography>
         </Grid>
         <Grid item xs={12} align="center">
@@ -159,6 +153,9 @@ export default class HomePage extends Component {
               </Button>
             </>
           )}
+          <Grid item xs={12}>
+            <TopCharts />
+          </Grid>
         </Grid>
       </Grid>
     );

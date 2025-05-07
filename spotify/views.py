@@ -1,5 +1,5 @@
 from django.shortcuts import redirect
-from .credentials import REDIRECT_URI, CLIENT_SECRET, CLIENT_ID
+from .credentials import *
 from rest_framework.views import APIView
 from requests import Request, post
 from rest_framework import status
@@ -13,6 +13,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import get_authorization_header
 from rest_framework.exceptions import AuthenticationFailed
 from django.conf import settings
+import uuid
+from django.core.cache import cache
+from django.http import JsonResponse
+import requests
 
 class ActiveDeviceView(APIView):
     permission_classes = [IsAuthenticated]
@@ -35,16 +39,20 @@ class ActiveDeviceView(APIView):
 
 
 class AuthURL(APIView):
+
     permission_classes = [IsAuthenticated] 
     def get(self, request, fornat=None):
+        state = str(uuid.uuid4())
+        cache.set(f"spotify_state_{state}", request.user.id, timeout=600)
+        
         scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-playback-state'
-        jwt_token = str(get_authorization_header(request), 'utf-8').split(' ')[1]
+  
         url = Request('GET', 'https://accounts.spotify.com/authorize', params={
             'scope': scopes,
             'response_type': 'code',
             'redirect_uri': REDIRECT_URI,
             'client_id': CLIENT_ID,
-            'state': jwt_token,
+            'state': state,
             'show_dialog': 'true'
         }).prepare().url
 
@@ -68,43 +76,66 @@ def clear_spotify_tokens(user_id):
 @permission_classes([AllowAny])
 def spotify_callback(request):
     print("CALL BACK")
-    code = request.GET.get('code')
-    jwt_token = request.GET.get('state')
-    jwt_authenticator = JWTAuthentication()
+    code = request.GET.get("code")
+    state = request.GET.get("state")
+   
+    user_id = cache.get(f"spotify_state_{state}")
+    if user_id is None:
+        raise AuthenticationFailed("Invalid or expired state value")
     
-    try:
-        validated_token = jwt_authenticator.get_validated_token(jwt_token)
-        user = jwt_authenticator.get_user(validated_token)
-    except Exception as e:
-        raise AuthenticationFailed(f"Invalid token in state param: {e}")
 
     response = post('https://accounts.spotify.com/api/token', data={
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': REDIRECT_URI,
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET
-    }).json()
-    
-    access_token = response.get('access_token')
-    token_type = response.get('token_type')
-    refresh_token = response.get('refresh_token')
-    expires_in = response.get('expires_in')
+    'grant_type': 'authorization_code',
+    'code': code,
+    'redirect_uri': REDIRECT_URI,
+    'client_id': CLIENT_ID,
+    'client_secret': CLIENT_SECRET
+    })
 
-    headers = {'Authorization': f'Bearer {access_token}'}
-    user_info = get("https://api.spotify.com/v1/me", headers=headers).json()
+    print("📥 Spotify token response:", response.status_code, response.text)
+
+    # 防止 JSONDecodeError
+    try:
+        data = response.json()
+    except ValueError:
+        return JsonResponse({"error": "Failed to decode Spotify response", "raw": response.text}, status=500)
+
+    access_token = data.get("access_token")
+    refresh_token = data.get("refresh_token")
+    token_type = data.get("token_type")
+    expires_in = data.get("expires_in")
+
+    headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+    }
+
+    user_info_response = get("https://api.spotify.com/v1/me", headers=headers)
+
+    print("🧾 Spotify /me response:", user_info_response.status_code, user_info_response.text)
+
+    try:
+        user_info = user_info_response.json()
+    except ValueError:
+        return JsonResponse({
+            "error": "Failed to decode /v1/me response",
+            "status_code": user_info_response.status_code,
+            "response_text": user_info_response.text
+        }, status=500)
+
     spotify_user_id = user_info.get("id")
 
-    existing = SpotifyToken.objects.filter(spotify_user_id=spotify_user_id).exclude(user=user).first()
+    existing = SpotifyToken.objects.filter(spotify_user_id=spotify_user_id).exclude(user=user_id).first()
     if existing:
-        clear_spotify_tokens(user.id)
+        print("existing")
+        clear_spotify_tokens(user_id)
         return redirect(f"{settings.FRONTEND_URL}/spotify-conflict")
-
+    print("update")
     update_or_create_spotify_tokens(
-        str(user.id), str(spotify_user_id), access_token, token_type, expires_in, refresh_token
-    )
-
-    return redirect('/room-check/DEBUIJ')
+        str(user_id), str(spotify_user_id), access_token, token_type, expires_in, refresh_token
+    )    
+    
+    return redirect('frontend:')
 
 
 class CheckSpotifyAuthenticated(APIView):
@@ -122,21 +153,21 @@ class CurrentSong(APIView):
     def get(self, request, format=None):
         #print("Authenticated user: ", request.user)
         room_code = request.query_params.get('room_code')
-        #print("CurrentSong room : ", room_code)
+        print("CurrentSong room : ", room_code)
         if not room_code:
             return Response({'error room code is required'}, status=status.HTTP_400_BAD_REQUEST)
         room = Room.objects.filter(code=room_code)
         if room.exists():
-            #print("room exist")
+            print("room exist")
             room = room[0]
         else:
-            #print("room is not exist")
+            print("room is not exist")
             return Response({}, status=status.HTTP_404_NOT_FOUND)
 
         host = str(request.user.id)
         endpoint = "player/currently-playing"
         response = execute_spotify_api_request(host, endpoint)
-        #print("1 RES : ", response, '\n\n\n')
+        print("1 RES : ", response, '\n\n\n')
         if 'error' in response or 'item' not in response:
             return Response({}, status=status.HTTP_204_NO_CONTENT)
         playing_type = response.get('currently_playing_type')

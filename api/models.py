@@ -12,8 +12,23 @@ def generate_unique_code():
             break
     return code
 
+from django.db import models
 
-# Create your models here.
+class TopCharts(models.Model):
+    id = models.AutoField(primary_key=True)
+    country_code = models.CharField(max_length=2)
+    rank = models.IntegerField()
+    track_id = models.CharField(max_length=255, default='temp-id')
+    artist_name = models.CharField(max_length=255)
+    song_name = models.CharField(max_length=255)
+    spotify_url = models.CharField(max_length=500)
+    retrieved_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "top_charts"  
+        managed = False
+        app_label = 'api'
+
 class Room(models.Model):
     code = models.CharField(max_length = 8, unique = True, default = generate_unique_code)
     host = models.ForeignKey(User, on_delete=models.CASCADE)

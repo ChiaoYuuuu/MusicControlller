@@ -14,5 +14,5 @@ urlpatterns = [
     path('token', MyTokenObtainPairView.as_view(), name='token'),
     path('token-refresh', TokenRefresh.as_view(), name='token_refresh'),
     path('auto-leave', AutoLeave.as_view(), name='auto_leave'),
-   
+    path('top-song', TopSong.as_view(), name='top_song'),
 ]
