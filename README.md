@@ -45,9 +45,9 @@ DB_PASSWORD=your_oracle_password
 DB_DSN=your_oracle_dsn
 
 ### 4. Run Django backend
-python manage.py makemigrations
-python manage.py migrate
-python manage.py runserver
+python manage.py makemigrations   
+python manage.py migrate   
+python manage.py runserver   
 
 ### 5. Install frontend dependencies and start development server
 Navigate to the frontend/ directory:
