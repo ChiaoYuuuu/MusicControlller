@@ -40,10 +40,6 @@ async function refreshAccessToken() {
 class Room extends Component {
   constructor(props) {
     super(props);
-    console.log("Room props:", this.props);
-    console.log("Room params RoomCode:", this.props.roomCode);
-    console.log("localstorage : ", localStorage.getItem("room_code"));
-
     this.state = {
       votesToSkip: 2,
       guestCanPause: false,
@@ -61,11 +57,7 @@ class Room extends Component {
     this.authenticateSpotify = this.authenticateSpotify.bind(this);
   }
   componentDidMount() {
-    window.addEventListener("beforeunload", this.handleUnload);
-    console.log(
-      "🎯Room - Start Current room_code in localStorage:",
-      localStorage.getItem("room_code")
-    );
+    
     this.getRoomDetails();
     this.interval = setInterval(this.getCurrentSong, 1000);
     this.tokenInterval = setInterval(() => {
@@ -127,17 +119,11 @@ class Room extends Component {
   }
 
   getRoomDetails() {
-    console.log(
-      "🎯Room - Detail Current room_code in localStorage:",
-      localStorage.getItem("room_code")
-    );
 
     const accessToken = localStorage.getItem("access");
     const headers = {
       Authorization: `Bearer ${accessToken}`,
     };
-    console.log("GET ROOM DETAIL : ", localStorage.getItem("room_code"));
-    console.log("Props.roomCode : ", this.props.roomCode);
     return fetch("/api/get-room?code=" + this.props.roomCode, {
       headers,
     })
@@ -145,7 +131,6 @@ class Room extends Component {
         if (!response.ok) {
           this.props.leaveRoomCallback();
           this.props.navigate("/");
-          console.log("test");
         }
         return response.json();
       })

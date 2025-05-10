@@ -44,11 +44,11 @@ def is_spotify_authenticated(user_id):
     if tokens:
         expiry = tokens.expires_in
         if expiry <= timezone.now():
-            print(f"Token refreshed for user {user_id}")
+            #print(f"Token refreshed for user {user_id}")
             refresh_spotify_token(user_id)
 
         return True
-    print("is_spotify_authenticated FAILED")
+    #print("is_spotify_authenticated FAILED")
     return False
 
 
@@ -77,14 +77,14 @@ def refresh_spotify_token(user_id):
 
     update_or_create_spotify_tokens(
         user_id, spotify_user_id, access_token, token_type, expires_in, refresh_token)
-    print(f"Refreshed token for user {user_id}")
+    #print(f"Refreshed token for user {user_id}")
 
 
 def execute_spotify_api_request(user_id, endpoint, post_=False, put_=False):
     if not is_spotify_authenticated(user_id):
         return {"execute_spotify_api_request - error": "User not authenticated"}
     tokens = get_user_tokens(user_id)
-    print("🪪 Access token:", tokens.access_token)
+    #print("🪪 Access token:", tokens.access_token)
 
     if not tokens:
         return {'Error': 'User not authenticated'}
@@ -101,8 +101,8 @@ def execute_spotify_api_request(user_id, endpoint, post_=False, put_=False):
         #print("Spotify API response : ", res.status_code, res.text)
 
     response = get(BASE_URL + endpoint, {}, headers=headers)
-    print('Response : ', response)
-    print('Text : ', response.text)
+    #print('Response : ', response)
+    #print('Text : ', response.text)
     #print("Endpoint:", BASE_URL + endpoint)
     #print("Headers:", headers)
     try:
@@ -113,7 +113,7 @@ def execute_spotify_api_request(user_id, endpoint, post_=False, put_=False):
     
 def play_song(user_id):
     res = execute_spotify_api_request(user_id, "player/play", put_=True)
-    print("🔁 Spotify play response:", res.status_code if hasattr(res, "status_code") else res)
+    #print("🔁 Spotify play response:", res.status_code if hasattr(res, "status_code") else res)
     return res
 
 

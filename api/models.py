@@ -30,11 +30,17 @@ class TopCharts(models.Model):
         app_label = 'api'
 
 class Room(models.Model):
-    code = models.CharField(max_length = 8, unique = True, default = generate_unique_code)
-    host = models.ForeignKey(User, on_delete=models.CASCADE)
-    guest_can_pause = models.BooleanField(null=False, default=False)
-    votes_to_skip = models.IntegerField(null=False, default=1)
-    created_at = models.DateTimeField(auto_now_add=True)
-    current_song = models.CharField(max_length=50, null=True)
+    code             = models.CharField(max_length=8, unique=True, default=generate_unique_code)
+    host             = models.ForeignKey(User, on_delete=models.CASCADE)
+    guest_can_pause  = models.BooleanField(default=False)
+    votes_to_skip    = models.IntegerField(default=1)
+    created_at       = models.DateTimeField(auto_now_add=True)
+    current_song     = models.CharField(max_length=50, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['host'], name='idx_room_host'),
+        ]
+
 
 

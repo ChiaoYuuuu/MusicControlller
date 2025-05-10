@@ -217,8 +217,3 @@ export default class HomePage extends Component {
     );
   }
 }
-//ROUTE下半段 :
-//<Route
-//path="/room/:roomCode"
-//element={<RoomWrapper leaveRoomCallback={this.clearRoomCode} />}
-///>

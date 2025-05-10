@@ -4,3 +4,14 @@ requests>=2.25.0
 spotipy>=2.19.0
 python-dotenv>=1.0.0
 djangorestframework-simplejwt>=5.2.2
+wheel
+locust
+celery
+django_celery_beat
+django-debug-toolbar
+django-extensions
+psycopg2-binary
+oracledb
+cx_Oracle
+django-cors-headers
+django-redis

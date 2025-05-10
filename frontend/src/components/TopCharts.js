@@ -14,9 +14,10 @@ function TopCharts() {
       .catch((err) => console.error("Failed to load charts:", err));
   }, []);
 
-  if (!charts) return <p>Loading charts...</p>;
+  if (!charts) return <p>Loading top 10 songs...</p>;
 
   const countries = Object.keys(charts);
+  const songs = charts[selectedCountry];
 
   return (
     <div style={{ marginTop: "30px", textAlign: "center" }}>
@@ -41,7 +42,7 @@ function TopCharts() {
       <div
         style={{
           maxHeight: "200px",
-          width: "50%",
+          width: "80%",
           margin: "0 auto",
           border: "1px solid white",
           borderRadius: "8px",
@@ -51,13 +52,28 @@ function TopCharts() {
         }}
       >
        
-        <ol style={{ color: "white", paddingLeft: "20px" }}>
-          {charts[selectedCountry].map((song, index) => (
-            <li key={index}>
-              {song.song_name} - {song.artist_name}
-            </li>
-          ))}
-        </ol>
+      <ol>
+        {songs.map((song, index) => (
+          <li key={index}>
+            {song.song_name} - {song.artist_name}  {' '}
+            <span style={{
+              marginLeft: '8px',
+              fontSize: '10px',
+              color:
+                song.rank_change === 'NEW'
+                  ? 'yellow'
+                  : song.rank_change?.startsWith('↑')
+                  ? 'lightgreen'
+                  : song.rank_change?.startsWith('↓')
+                  ? 'red'
+                  : 'inherit'
+              }}>
+              {song.rank_change !== '-' ? song.rank_change : ''}
+            </span>
+          </li>
+        ))}
+      </ol>
+
       </div>
     </div>
   );

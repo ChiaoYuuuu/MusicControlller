@@ -19,7 +19,7 @@ COUNTRY_PLAYLIST_IDS = {
 
 
 @shared_task
-def fetch_and_store_top_50_task():
+def fetch_and_store_top10_task():
     print(f"[{datetime.now()}] 🚀 Starting Spotify Top 50 task!!!")
 
     playlist_link = "https://open.spotify.com/playlist/37i9dQZEVXbNG2KDcFcKOF?si=1333723a6eff4b7f"
@@ -88,4 +88,4 @@ def fetch_and_store_top_50_task():
 
 
 if __name__ == "__main__":
-    fetch_and_store_top_50_task()
+    fetch_and_store_top10_task()

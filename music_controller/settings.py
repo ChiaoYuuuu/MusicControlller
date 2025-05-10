@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +24,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "music_controller" / "static",
 ]
 
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 DATABASE_ROUTERS = ['api.db_router.OracleRouter']
@@ -37,8 +39,7 @@ SECRET_KEY = 'django-insecure-3d0!^$t)c)_o-t7@5m7ffqng6)*y774^^0)%0-k)sk(0x-13do
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 
@@ -55,10 +56,12 @@ INSTALLED_APPS = [
     'frontend.apps.FrontendConfig',
     'spotify.apps.SpotifyConfig',
     'debug_toolbar',
-    'django_extensions'
+    'django_extensions',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -67,6 +70,18 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://extensions.aitopia.ai",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True  
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'access-control-allow-origin',
+    'authorization',
+    'content-type',
 ]
 
 INTERNAL_IPS = ['127.0.0.1']
@@ -103,20 +118,34 @@ WSGI_APPLICATION = 'music_controller.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'musicdb'),
+        'USER': os.environ.get('DB_USER', 'musicuser'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'musicpass'),
+        'HOST': 'db',
+        'PORT': '5432',
+        'CONN_MAX_AGE': 60,
+        
     },
     'oracle': {
         'ENGINE': 'django.db.backends.oracle',
-        'NAME': '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=127.0.0.1)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XEPDB1)))',
+        'NAME': '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oracle-xe)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XEPDB1)))',
         'USER': 'system',
-        'PASSWORD': 'MyNewPassword123',
+        'PASSWORD': 'oracle123',
+        'CONN_MAX_AGE': 60,
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",  
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {

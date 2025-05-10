@@ -12,6 +12,10 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 import json
+from django.utils import timezone
+from datetime import timedelta
+from django.core.cache import cache
+from django.db import transaction, IntegrityError
 
 class TopSong(APIView):
     permission_classes = [AllowAny]
@@ -19,13 +23,62 @@ class TopSong(APIView):
     def get(self, request, format=None):
         country_codes = ["TW", "JP", "KR", "US"]
         result = {}
+        today = timezone.now().date()
+        yesterday = today - timedelta(days=1)
+
         for code in country_codes:
-            result[code] = list(
+            today_latest = (
                 TopCharts.objects.using('oracle')
-                .filter(country_code=code)
-                .order_by('-retrieved_at', 'rank')[:10]
-                .values()
+                .filter(country_code=code, retrieved_at__date=today)
+                .order_by('-retrieved_at')
+                .values_list('retrieved_at', flat=True)
+                .first()
             )
+
+            yesterday_latest = (
+                TopCharts.objects.using('oracle')
+                .filter(country_code=code, retrieved_at__date=yesterday)
+                .order_by('-retrieved_at')
+                .values_list('retrieved_at', flat=True)
+                .first()
+            )
+
+            today_songs = []
+            if today_latest:
+                today_songs = list(
+                    TopCharts.objects.using('oracle')
+                    .filter(country_code=code, retrieved_at=today_latest)
+                    .order_by('rank')[:10]
+                    .values('track_id', 'song_name', 'artist_name', 'rank')
+                )
+
+            yesterday_songs_map = {}
+            if yesterday_latest:
+                yesterday_songs_map = {
+                    song['track_id']: song['rank']
+                    for song in TopCharts.objects.using('oracle')
+                    .filter(country_code=code, retrieved_at=yesterday_latest)
+                    .values('track_id', 'rank')
+                }
+
+            for song in today_songs:
+                track_id = song['track_id']
+                current_rank = song['rank']
+                prev_rank = yesterday_songs_map.get(track_id)
+
+                if prev_rank is None:
+                    song['rank_change'] = 'NEW'
+                else:
+                    diff = prev_rank - current_rank
+                    if diff > 0:
+                        song['rank_change'] = f'↑{diff}'
+                    elif diff < 0:
+                        song['rank_change'] = f'↓{abs(diff)}'
+                    else:
+                        song['rank_change'] = '-'
+
+            result[code] = today_songs
+
         return Response(result)
 
 class TokenRefresh(APIView):
@@ -41,11 +94,9 @@ class TokenRefresh(APIView):
         except TokenError:
             return Response({"error": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
 
-
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
-        print("🔐 Issuing token for:", user.username, "ID:", user.id)
         token = super().get_token(user)
         token['username'] = user.username 
         token['user_id'] = user.id
@@ -53,7 +104,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
-
 
 class AutoLeave(APIView):
     permission_classes = [AllowAny]  
@@ -69,7 +119,6 @@ class AutoLeave(APIView):
             print("leave-room error:", e)
         print("LEAVE ROOM SUCCESS")
         return Response({"message": "Left room"}, status=status.HTTP_200_OK)
-
 
 class Login(APIView):
     def post(self, request):
@@ -94,31 +143,35 @@ class Login(APIView):
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-
 class RegisterView(APIView):
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
 
+    @transaction.atomic
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        if User.objects.filter(username=username).exists():
+        if not username or not password:
+            return Response({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.create_user(username=username, password=password)
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "message": "User registered successfully",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }, status=status.HTTP_201_CREATED)
+
+        except IntegrityError:
             return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        user = User.objects.create_user(username=username, password=password)
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            "message": "User registered successfully",
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        }, status=status.HTTP_201_CREATED)
         
-
-
 class RoomView(generics.ListAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-
 
 class GetRoom(APIView):
     serializer_class = RoomSerializer
@@ -140,7 +193,6 @@ class GetRoom(APIView):
 
         return Response({'Bad Request': 'Code paramater not found in request'}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class JoinRoom(APIView):
     lookup_url_kwarg = 'code'
     permission_classes = [IsAuthenticated]
@@ -156,35 +208,39 @@ class JoinRoom(APIView):
 
         return Response({'Bad Request': 'Invalid post data, did not find a code key'}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class CreateRoomView(APIView):
     serializer_class = CreateRoomSerializer
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, format=None):
-
         serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            guest_can_pause = serializer.data.get('guest_can_pause')
-            votes_to_skip = serializer.data.get('votes_to_skip')
-            host = request.user
-            queryset = Room.objects.filter(host=host)
-            if queryset.exists():
-                room = queryset[0]
-                room.guest_can_pause = guest_can_pause
-                room.votes_to_skip = votes_to_skip
-                room.save(update_fields=['guest_can_pause', 'votes_to_skip'])
-                #print("API Create Room room code: ", room.code)
-                
-                return Response(RoomSerializer(room).data, status=status.HTTP_200_OK)
-            else:
-                room = Room(host=host, guest_can_pause=guest_can_pause,
-                            votes_to_skip=votes_to_skip)
-                room.save()
-                return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
+        if not serializer.is_valid():
+            return Response(
+                {'error': 'Invalid data.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
-    
+        guest_can_pause = serializer.validated_data['guest_can_pause']
+        votes_to_skip    = serializer.validated_data['votes_to_skip']
+        host             = request.user
+        cache_key        = f"user_room_{host.id}"
+
+        room, created = Room.objects.update_or_create(
+            host=host,
+            defaults={
+                'guest_can_pause': guest_can_pause,
+                'votes_to_skip': votes_to_skip,
+            }
+        )
+
+        cache.set(cache_key, room, timeout=600)
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(
+            RoomSerializer(room).data,
+            status=status_code
+        )
+ 
 class UserInRoom(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -194,14 +250,20 @@ class UserInRoom(APIView):
     
 class LeaveRoom(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self, request, format=None):
-   
-        user = request.user
-        room = Room.objects.filter(host=user).first()
-        if room :
-            room.delete()
 
-        return Response({'Message': 'Success'}, status=status.HTTP_200_OK)
+    @transaction.atomic
+    def post(self, request, format=None):
+        user = request.user
+        cache_key = f"user_room_{user.id}"
+
+        room = Room.objects.select_for_update().filter(host=user).first()
+        if room:
+            room.delete()
+            cache.delete(cache_key)
+
+        return Response({'message': 'Success'}, status=status.HTTP_200_OK)
+
+
     
 class UpdateRoom(APIView):
     permission_classes = [IsAuthenticated]

@@ -12,7 +12,7 @@ def view_data():
     cursor.execute("""
         SELECT country_code, rank, song_name, artist_name, track_id, retrieved_at
         FROM top_charts
-        WHERE country_code = 'TW'
+        WHERE country_code = 'KR'
         ORDER BY retrieved_at DESC, rank ASC
     """)
     for row in cursor.fetchall():

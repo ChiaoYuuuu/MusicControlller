@@ -75,7 +75,7 @@ def clear_spotify_tokens(user_id):
 @authentication_classes([JWTAuthentication])
 @permission_classes([AllowAny])
 def spotify_callback(request):
-    print("CALL BACK")
+    #print("CALL BACK")
     code = request.GET.get("code")
     state = request.GET.get("state")
    
@@ -92,7 +92,7 @@ def spotify_callback(request):
     'client_secret': CLIENT_SECRET
     })
 
-    print("📥 Spotify token response:", response.status_code, response.text)
+    #print("📥 Spotify token response:", response.status_code, response.text)
 
     # 防止 JSONDecodeError
     try:
@@ -112,7 +112,7 @@ def spotify_callback(request):
 
     user_info_response = get("https://api.spotify.com/v1/me", headers=headers)
 
-    print("🧾 Spotify /me response:", user_info_response.status_code, user_info_response.text)
+    #print("🧾 Spotify /me response:", user_info_response.status_code, user_info_response.text)
 
     try:
         user_info = user_info_response.json()
@@ -127,10 +127,10 @@ def spotify_callback(request):
 
     existing = SpotifyToken.objects.filter(spotify_user_id=spotify_user_id).exclude(user=user_id).first()
     if existing:
-        print("existing")
+        
         clear_spotify_tokens(user_id)
         return redirect(f"{settings.FRONTEND_URL}/spotify-conflict")
-    print("update")
+    
     update_or_create_spotify_tokens(
         str(user_id), str(spotify_user_id), access_token, token_type, expires_in, refresh_token
     )    
@@ -153,21 +153,21 @@ class CurrentSong(APIView):
     def get(self, request, format=None):
         #print("Authenticated user: ", request.user)
         room_code = request.query_params.get('room_code')
-        print("CurrentSong room : ", room_code)
+        #print("CurrentSong room : ", room_code)
         if not room_code:
             return Response({'error room code is required'}, status=status.HTTP_400_BAD_REQUEST)
         room = Room.objects.filter(code=room_code)
         if room.exists():
-            print("room exist")
+            #print("room exist")
             room = room[0]
         else:
-            print("room is not exist")
+            #print("room is not exist")
             return Response({}, status=status.HTTP_404_NOT_FOUND)
 
         host = str(request.user.id)
         endpoint = "player/currently-playing"
         response = execute_spotify_api_request(host, endpoint)
-        print("1 RES : ", response, '\n\n\n')
+        #print("1 RES : ", response, '\n\n\n')
         if 'error' in response or 'item' not in response:
             return Response({}, status=status.HTTP_204_NO_CONTENT)
         playing_type = response.get('currently_playing_type')
@@ -223,7 +223,7 @@ class CurrentSong(APIView):
                 'votes_required' : room.votes_to_skip,
                 'id': song_id
             }
-            print("SONG : ", song)
+            #print("SONG : ", song)
 
         self.update_room_song(room, song_id)
 
@@ -289,7 +289,7 @@ class SkipSong(APIView):
         votes = SkipVote.objects.filter(room=room, song_id=room.current_song)
         votes_needed = room.votes_to_skip
 
-        print("Votes so far:", len(votes), "User already voted:", user_voted)
+        #print("Votes so far:", len(votes), "User already voted:", user_voted)
         if user_voted:
             if request.user == room.host or len(votes) >= votes_needed:
                 votes.delete()
