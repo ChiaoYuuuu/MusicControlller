@@ -1,69 +1,114 @@
-# 🎵 Spotify Group Listening App
-A web application that allows users in the same virtual room to synchronously listen to Spotify content—including music and podcasts—with friends.  
-Users can vote to skip to the next or previous track, and the host can control playback in real-time.  
-This project is based on Tech With Tim's Music Controller Web App Tutorial, with several enhancements to support modern Spotify features and user authentication.
+# 🚀 MusicSync: Collaborative Spotify Listening Side Project
 
-## 🚀 Features
-- ✅ Create and join rooms via room code
-- ✅ Synchronized playback for **Spotify music**  
-- ✅ **Synchronized playback for Spotify podcasts** *(new)*
-- ✅ Host playback control and guest voting
-- ✅ Vote to skip to the next track
-- ✅ **Vote to go back to the previous track** *(new)*  
-- ✅ **JWT-based login and logout system** *(new)*
-- ✅ **Oracle database integration for storing Spotify charts** *(new)*
-- ✅ **Top 10 songs display by country (TW, JP, KR, US)** *(new)*
+A modern, full-stack web app that lets friends gather in virtual rooms and enjoy synchronized Spotify playback—music **and** podcasts—in real time.  
+Hosts control playback; guests vote to skip or rewind tracks. Plus, an Oracle-backed Top Charts feature surfaces the current Top 10 in TW, JP, KR, and US.  
 
-## 📊 Top Charts UI
-The homepage now includes a new feature for viewing Top 10 Spotify songs per region using dropdown selection.
 
-<img width="330" alt="image" src="https://github.com/user-attachments/assets/16e81e94-87ab-42e4-809c-1b463c352757" />
+## 🔥 Highlights
 
-- Countries supported: TW, JP, KR, US
-- Data is fetched from Oracle database and displayed dynamically
-- Dropdown allows user to switch country
-- Songs shown in scrollable card with responsive layout
+- **Real-time sync** of Spotify music & podcasts across multiple users  
+- **Host controls**: play, pause, skip, rewind  
+- **Guest voting**: democracy in action (skip / rewind)  
+- **JWT-secured** login, logout, and room-access  
+- **Oracle XE integration** for storing & querying global Top 10 charts  
+- **Configurable dropdown** UI for regional Top 10 (TW, JP, KR, US)  
+- **Docker-first**: one command to spin up backend, Oracle XE, Redis  
 
-## 🛠️ Setup Instructions
 
-### 1. Clone the repository
-git clone https://github.com/ChiaoYuuuu/MusicControlller.git  
-cd MusicControlller
+## 🏗 Architecture & Tech Stack
 
-### 2. Install backend dependencies
-pip install -r requirements.txt
+| Layer            | Technology              |  
+|------------------|-------------------------|  
+| Frontend         | React, Material-UI      |  
+| Backend          | Django 4.2, DRF, Celery |  
+| Auth             | JWT (djangorestframework-simplejwt) |  
+| Data stores      | PostgreSQL (App data), Oracle XE (Charts), Redis (Celery broker & cache) |  
+| Containerization | Docker, Docker Compose  |  
+| Load testing     | Locust                  |  
 
-### 3. Set up environment variables
-Create a .env file and fill in the following:
 
-SPOTIFY_CLIENT_ID=your_spotify_client_id  
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
-SPOTIFY_REDIRECT_URI=http://127.0.0.1:8000/spotify/redirect
+## ⚙️ Prerequisites
 
-DB_USER=your_oracle_user
-DB_PASSWORD=your_oracle_password
-DB_DSN=your_oracle_dsn
+- Docker & Docker Compose installed  
+- Spotify Premium account (required for playback API)  
+- Optional: local `docker` group membership to avoid `sudo`  
 
-### 4. Run Django backend
-python manage.py makemigrations   
-python manage.py migrate   
-python manage.py runserver   
 
-### 5. Install frontend dependencies and start development server
-Navigate to the frontend/ directory:
+## 🛠️ Quickstart
 
-npm install  
-npm run dev
+1. **Clone & enter project**  
+   ```
+   git clone https://github.com/ChiaoYuuuu/MusicController.git  
+   cd MusicController
+   ```
 
-## 📌 Notes
-You must have a Spotify Premium account for playback to work
-Spotify authentication uses OAuth2
-Each user can create one room only
-Oracle DB must be running locally or via Docker for Top 10 feature
+2. **Copy & configure environment**
+   ```
+   cp .env.example .env
+   ```
 
-## 📚 Credit
-Originally inspired by Tech With Tim’s tutorial
-Enhancements, feature upgrades, and bug fixes by ChiaoYuuuu
+   **Edit .env**  
+   ```
+   SPOTIFY_CLIENT_ID=your_spotify_client_id  
+   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
+   SPOTIFY_REDIRECT_URI=http://localhost:8000/spotify/redirect  
+    
+   # Oracle XE (in Docker)
+   DB_ORACLE_USER=system  
+   DB_ORACLE_PASSWORD=oracle123  
+   DB_ORACLE_HOST=oracle-xe  
+   DB_ORACLE_PORT=1521  
+   DB_ORACLE_NAME=XEPDB1  
+   ```
+
+3. **Build & launch all services**
+   ```
+   docker-compose up -d --build
+   ```
+   
+    - web: Django + DRF + Celery worker  
+    - oracle-xe: Oracle XE 21c  
+    - redis: broker & Django cache  
+    - postgres: primary app database
+
+4. **Verify**
+    - API docs & health: http://localhost:8000/api/  
+    - Frontend UI: http://localhost:8000/  
+    - Oracle listener: localhost:1521
+
+5. **View real-time logs**
+   ```
+   docker-compose logs -f web
+   ```
+
+##  🚦 Performance & Testing
+  Index: Room.host indexed for ultra-fast lookups  
+  Connection pooling: CONN_MAX_AGE=60 reuses DB connections  
+  Load tests with Locust:  
+  ```
+  locust -f locustfile.py \
+    --headless \
+    --users 200 --spawn-rate 20 \
+    --host http://localhost:8000 \
+    --run-time 2m \
+    --csv load_test
+  ```
+  Metrics tracked: Avg/Median/Percentiles/Req-per-sec/Failure Rate  
+
+## 📌 Tips & Tricks
+1. Switch off DEBUG in production (DEBUG=False, set ALLOWED_HOSTS)  
+2. Use Gunicorn / Uvicorn instead of runserver for concurrency  
+3. Enable Celery Beat & Celery Flower for scheduled tasks & monitoring  
+4. Persist Oracle data via Docker volume (avoid docker-compose down -v)  
+
+## 🤝 Contributing
+1. Fork & clone  
+2. Create feature branch  
+3. Run tests & lint  
+4. Open a PR with a clear description  
+
+## 🎓 Credit
+Inspired by Tech With Tim’s Music Controller tutorial — supercharged by ChiaoYuuuu with JWT auth, Oracle Charts, and production-grade Docker setup.
 
 
 
