@@ -52,7 +52,7 @@ jobs:
           coverage run --rcfile=.coveragerc manage.py test
           coverage report
       - name: Upload coverage to GitHub Actions
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: .coverage 
+          path: .coverage
