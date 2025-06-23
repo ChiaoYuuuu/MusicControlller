@@ -27,9 +27,9 @@ jobs:
       POSTGRES_DB: music_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_HOST: localhost
+      POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      REDIS_URL: redis://localhost:6379/0
+      REDIS_URL: redis://redis:6379/0 
       SECRET_KEY: testsecret
       SPOTIFY_CLIENT_ID: dummy
       SPOTIFY_CLIENT_SECRET: dummy
