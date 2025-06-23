@@ -1,114 +1,167 @@
-# 🚀 MusicSync: Collaborative Spotify Listening Side Project
+# 🚀 MusicSync
 
-A modern, full-stack web app that lets friends gather in virtual rooms and enjoy synchronized Spotify playback—music **and** podcasts—in real time.  
-Hosts control playback; guests vote to skip or rewind tracks. Plus, an Oracle-backed Top Charts feature surfaces the current Top 10 in TW, JP, KR, and US.  
+**MusicSync** 是一個用 Python（Django + DRF + Celery）與 React 編寫的全端專案，讓朋友們可以在虛擬房間同步收聽 Spotify 音樂或 Podcast。
+支援房主控制播放、來賓投票跳過/回播、即時同步、排行榜查詢等功能。
+適合遠端聚會、線上音樂派對、團體收聽等場景。
 
+---
 
-## 🔥 Highlights
+## 主要特點
 
-- **Real-time sync** of Spotify music & podcasts across multiple users  
-- **Host controls**: play, pause, skip, rewind  
-- **Guest voting**: democracy in action (skip / rewind)  
-- **JWT-secured** login, logout, and room-access  
-- **Oracle XE integration** for storing & querying global Top 10 charts  
-- **Configurable dropdown** UI for regional Top 10 (TW, JP, KR, US)  
-- **Docker-first**: one command to spin up backend, Oracle XE, Redis  
+- 多人即時同步 Spotify 播放
+- 房主控制播放、暫停、跳過、回播
+- 來賓投票跳過/回播
+- JWT 安全登入、房間驗證
+- 支援地區排行榜（TW, JP, KR, US）
+- Docker 一鍵啟動全服務
 
+---
 
-## 🏗 Architecture & Tech Stack
+## 專案技術
 
-| Layer            | Technology              |  
-|------------------|-------------------------|  
-| Frontend         | React, Material-UI      |  
-| Backend          | Django 4.2, DRF, Celery |  
-| Auth             | JWT (djangorestframework-simplejwt) |  
-| Data stores      | PostgreSQL (App data), Oracle XE (Charts), Redis (Celery broker & cache) |  
-| Containerization | Docker, Docker Compose  |  
-| Load testing     | Locust                  |  
+| 層級         | 技術                        |
+|--------------|-----------------------------|
+| 後端         | Django 4.2, DRF, Celery     |
+| 認證         | JWT (djangorestframework-simplejwt) |
+| 資料庫       | PostgreSQL, Redis           |
+| 容器化       | Docker, Docker Compose      |
+| 測試         | Locust, coverage            |
 
+---
 
-## ⚙️ Prerequisites
+## 安裝要求
 
-- Docker & Docker Compose installed  
-- Spotify Premium account (required for playback API)  
-- Optional: local `docker` group membership to avoid `sudo`  
+- Python 3.8+
+- Docker & Docker Compose
+- Spotify Premium 帳號（API 播放需用）
+- Node.js（如需前端本地開發）
+- PostgreSQL、Redis（Docker 會自動啟動）
 
+### Python 依賴（`requirements.txt`）
+- Django 4+
+- djangorestframework
+- requests
+- spotipy
+- celery
+- psycopg2-binary
+- 其他詳見 `requirements.txt`
 
-## 🛠️ Quickstart
+---
 
-1. **Clone & enter project**  
-   ```
-   git clone https://github.com/ChiaoYuuuu/MusicController.git  
+## 安裝與啟動
+
+1. **Clone 專案**
+   ```bash
+   git clone https://github.com/ChiaoYuuuu/MusicController.git
    cd MusicController
    ```
 
-2. **Copy & configure environment**
-   ```
+2. **設定環境變數**
+   ```bash
    cp .env.example .env
+   # 編輯 .env，填入 Spotify API 金鑰
    ```
 
-   **Edit .env**  
-   ```
-   SPOTIFY_CLIENT_ID=your_spotify_client_id  
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
-   SPOTIFY_REDIRECT_URI=http://localhost:8000/spotify/redirect  
-    
-   # Oracle XE (in Docker)
-   DB_ORACLE_USER=system  
-   DB_ORACLE_PASSWORD=oracle123  
-   DB_ORACLE_HOST=oracle-xe  
-   DB_ORACLE_PORT=1521  
-   DB_ORACLE_NAME=XEPDB1  
-   ```
-
-3. **Build & launch all services**
-   ```
+3. **啟動服務（建議用 Docker）**
+   ```bash
    docker-compose up -d --build
    ```
-   
-    - web: Django + DRF + Celery worker  
-    - oracle-xe: Oracle XE 21c  
-    - redis: broker & Django cache  
-    - postgres: primary app database
+   - 啟動 Django + Celery + Redis + PostgreSQL
 
-4. **Verify**
-    - API docs & health: http://localhost:8000/api/  
-    - Frontend UI: http://localhost:8000/  
-    - Oracle listener: localhost:1521
-
-5. **View real-time logs**
-   ```
-   docker-compose logs -f web
+4. **前端開發（可選）**
+   ```bash
+   cd frontend
+   npm install
+   npm start
    ```
 
-##  🚦 Performance & Testing
-  Index: Room.host indexed for ultra-fast lookups  
-  Connection pooling: CONN_MAX_AGE=60 reuses DB connections  
-  Load tests with Locust:  
+5. **驗證服務**
+   - API docs: [http://localhost:8000/api/](http://localhost:8000/api/)
+   - 前端 UI: [http://localhost:8000/](http://localhost:8000/)
+
+---
+
+## 使用概述
+
+- 註冊/登入 → 建立房間 → 分享房間碼 → 來賓加入
+- 房主可控制播放，來賓可投票跳過/回播
+- 支援排行榜查詢、裝置切換等功能
+- API 介面自帶 Swagger 文件
+
+---
+
+## 專案架構
+
+```
+MusicControlller/
+├── api/                # Django app，API views、serializers、service、application、domain、repository
+│   ├── controller/     # API views (auth, room, topcharts...)
+│   ├── application/    # Application 層，調用 service 處理框架功能
+│   ├── domain/         # 純商業邏輯（service）
+│   ├── infrastructure/ # ORM models、serializers
+│   ├── repository/     # DB 查詢封裝
+│   └── ...
+├── spotify/            # Spotify 整合相關（client, domain, infrastructure, controller）
+│   ├── infrastructure/ # SpotifyToken, SkipVote, client, repository
+│   ├── application/    # 播放控制應用層
+│   └── ...
+├── frontend/           # React 前端專案
+│   ├── src/components/ # React 元件
+│   └── ...
+├── test/               # 測試（unit, integration, stress）
+│   ├── unit/           # 單元測試
+│   ├── integration/    # 整合測試
+│   └── stress/         # 壓力測試（Locust）
+├── project_root/       # Django 專案設定（settings, urls, celery, asgi, wsgi）
+├── manage.py           # Django 管理指令
+├── requirements.txt    # Python 依賴
+├── docker-compose.yml  # Docker 組態
+├── Dockerfile          # Docker 建置
+└── README.md           # 專案說明
+```
+
+- **api/**：後端主 API app，分層清楚，易於維護與擴充。
+- **spotify/**：Spotify OAuth、播放控制、token 管理等。
+- **frontend/**：React 前端 SPA。
+- **test/**：單元、整合、壓力測試。
+- **project_root/**：Django 專案設定與 Celery。
+
+---
+
+## 測試與故障排除
+
+- **單元測試**  
+  ```bash
+  coverage run --rcfile=.coveragerc manage.py test
   ```
-  locust -f locustfile.py \
-    --headless \
-    --users 200 --spawn-rate 20 \
-    --host http://localhost:8000 \
-    --run-time 2m \
-    --csv load_test
-  ```
-  Metrics tracked: Avg/Median/Percentiles/Req-per-sec/Failure Rate  
+  - 測試檔案位於 `test/unit/`，如 `test_api.py`, `test_spotify.py`
+  - 若遇到 `SpotifyToken` unique constraint 問題，請先清空資料表：
+    ```python
+    from spotify.infrastructure.models import SpotifyToken
+    SpotifyToken.objects.all().delete()
+    ```
+  - `SpotifyToken.user` 欄位型態為 CharField，所有 token 相關操作都必須用 user_id 的字串（如 `str(user.id)`）
 
-## 📌 Tips & Tricks
-1. Switch off DEBUG in production (DEBUG=False, set ALLOWED_HOSTS)  
-2. Use Gunicorn / Uvicorn instead of runserver for concurrency  
-3. Enable Celery Beat & Celery Flower for scheduled tasks & monitoring  
-4. Persist Oracle data via Docker volume (avoid docker-compose down -v)  
+- **常見問題**
+  - Docker 啟動異常：請檢查 .env 設定與 port 是否被佔用
+  - Spotify 播放失敗：需 Spotify Premium 帳號，且裝置需啟動 Spotify App
 
-## 🤝 Contributing
-1. Fork & clone  
-2. Create feature branch  
-3. Run tests & lint  
-4. Open a PR with a clear description  
+- **更多細節**  
+  - 參見 [Django 官方文件](https://docs.djangoproject.com/zh-hans/4.2/)
+  - 參見 [Spotify API 文件](https://developer.spotify.com/documentation/web-api/)
 
-## 🎓 Credit
-Inspired by Tech With Tim’s Music Controller tutorial — supercharged by ChiaoYuuuu with JWT auth, Oracle Charts, and production-grade Docker setup.
+---
 
+## 相關資源
+
+- [Django REST framework](https://www.django-rest-framework.org/)
+- [Celery](https://docs.celeryq.dev/en/stable/)
+- [React](https://react.dev/)
+- [Docker 官方文檔](https://docs.docker.com/)
+- [本專案 GitHub](https://github.com/ChiaoYuuuu/MusicController)
+
+---
+
+如需更詳細的開發、測試、貢獻說明，請參閱專案內其他說明文件或直接聯絡作者。
 
 

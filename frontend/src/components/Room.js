@@ -187,18 +187,37 @@ class Room extends Component {
   }
 
   leaveButtonPressed() {
+    console.log("=== Leave Room ===");
     const requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("access")}`,
       },
+      body: JSON.stringify({ room_code: localStorage.getItem("room_code") }),
     };
-    fetch("/api/leave-room", requestOptions).then((_response) => {
-      console.log("Leave");
-      localStorage.removeItem("room_code");
-      this.props.navigate("/");
-    });
+    fetch("/api/leave-room", requestOptions)
+      .then((response) => {
+        if (response.ok) {
+          localStorage.removeItem("room_code");
+          this.props.navigate("/");
+        } else {
+          return response.json().then(data => {
+            // 顯示錯誤訊息
+            alert(data.message || "Failed to leave room");
+            // 無論如何都跳轉
+            localStorage.removeItem("room_code");
+            console.log("=== Leave Room ===");
+            this.props.navigate("/info");
+          });
+        }
+      })
+      .catch((error) => {
+        alert("Network error: " + error);
+        // 網路錯誤也跳轉
+        localStorage.removeItem("room_code");
+        this.props.navigate("/");
+      });
   }
 
   updateShowSettings(value) {
@@ -247,7 +266,7 @@ class Room extends Component {
   }
 
   render() {
-    //console.log("ROOM Render");
+    console.log("ROOM Render");
     if (this.state.showSettings) {
       return this.renderSettings();
     }

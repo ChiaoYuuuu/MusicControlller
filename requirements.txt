@@ -11,7 +11,5 @@ django_celery_beat
 django-debug-toolbar
 django-extensions
 psycopg2-binary
-oracledb
-cx_Oracle
 django-cors-headers
 django-redis
