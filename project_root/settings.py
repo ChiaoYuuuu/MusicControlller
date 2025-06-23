@@ -120,11 +120,11 @@ WSGI_APPLICATION = 'project_root.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'musicdb'),
-        'USER': os.environ.get('DB_USER', 'musicuser'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'musicpass'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'), 
-        'PORT': '5432',
+        'NAME': os.environ.get('POSTGRES_DB', 'music_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'password'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
         'CONN_MAX_AGE': 60,
     }
 }
