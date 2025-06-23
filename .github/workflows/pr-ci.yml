@@ -50,8 +50,8 @@ jobs:
             nc -z postgres 5432 && echo Success && exit 0
             echo Waiting for Postgres...
             sleep 2
-       done
-       exit 1
+          done
+          exit 1
       - name: Run migrations
         run: |
           python manage.py migrate
