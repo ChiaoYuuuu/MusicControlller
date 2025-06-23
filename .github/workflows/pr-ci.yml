@@ -27,7 +27,7 @@ jobs:
       POSTGRES_DB: music_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0 
       SECRET_KEY: testsecret
@@ -46,12 +46,14 @@ jobs:
           pip install -r requirements.txt
       - name: Wait for Postgres
         run: |
-          for i in {1..20}; do
-            nc -z postgres 5432 && echo Success && exit 0
-            echo Waiting for Postgres...
+          for i in $(seq 1 20); do
+            pg_isready -h 127.0.0.1 -p $POSTGRES_PORT && echo "Postgres is ready" && exit 0
+            echo "Waiting for Postgres..."
             sleep 2
           done
+          echo "Postgres failed to respond"
           exit 1
+
       - name: Run migrations
         run: |
           python manage.py migrate
