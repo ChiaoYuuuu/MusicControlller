@@ -3,7 +3,7 @@ version: "3.9"
 services:
   web:
     volumes:
-      - .:/code
+      - .:/code/MusicController
     environment:
       DB_HOST: db
     command: >
@@ -23,7 +23,7 @@ services:
 
   worker:
     volumes:
-        - .:/code
+        - .:/code/MusicController
     environment:
       DB_HOST: db
     build: .
@@ -34,7 +34,7 @@ services:
 
   beat:
     volumes:
-      - .:/code
+      - .:/code/MusicController
     environment:
       DB_HOST: db
     build: .

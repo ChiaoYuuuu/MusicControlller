@@ -4,7 +4,7 @@ FROM python:3.9-slim
 RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists/*
 
 # 設定工作目錄
-WORKDIR /code
+WORKDIR /code/MusicController
 
 # 安裝 Python 套件
 COPY requirements.txt requirements.txt
