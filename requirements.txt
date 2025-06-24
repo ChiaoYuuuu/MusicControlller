@@ -13,3 +13,4 @@ django-extensions
 psycopg2-binary
 django-cors-headers
 django-redis
+coverage
