@@ -163,6 +163,7 @@ export default class HomePage extends Component {
 
   clearRoomCode() {
     localStorage.removeItem("room_code");
+    this.setState({ roomCode: "" });
   }
 
   render() {

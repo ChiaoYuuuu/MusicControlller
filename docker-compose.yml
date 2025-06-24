@@ -16,7 +16,7 @@ services:
 
   web:
     build: .
-    container_name: music_controller_web
+    container_name: musiccontroller
     environment:
       DB_NAME: musicdb
       DB_USER: musicuser

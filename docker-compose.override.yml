@@ -3,7 +3,9 @@ version: "3.9"
 services:
   web:
     volumes:
-      - .:/code
+      - .:/code/MusicController
+    environment:
+      DB_HOST: db
     command: >
       sh -c "
         python manage.py migrate &&
@@ -11,32 +13,32 @@ services:
       "
     depends_on:
       - redis
-      - oracle-xe
 
   redis:
-    image: redis
+    image: redis:7.2.4-alpine
     container_name: redis
     ports:
       - "6379:6379"
-
-  oracle-xe:
-    image: gvenzl/oracle-xe:21.3.0
-    container_name: oracle-xe
-    ports:
-      - "1521:1521"
-    environment:
-      - ORACLE_PASSWORD=oracle123
+    platform: linux/amd64
 
   worker:
+    volumes:
+        - .:/code/MusicController
+    environment:
+      DB_HOST: db
     build: .
-    command: celery -A music_controller worker --loglevel=info
+    command: celery -A project_root worker --loglevel=info
     depends_on:
       - web
       - redis
 
   beat:
+    volumes:
+      - .:/code/MusicController
+    environment:
+      DB_HOST: db
     build: .
-    command: celery -A music_controller beat --loglevel=info
+    command: celery -A project_root beat --loglevel=info
     depends_on:
       - web
       - redis

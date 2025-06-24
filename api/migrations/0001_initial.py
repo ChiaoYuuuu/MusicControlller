@@ -2,7 +2,7 @@
 
 import api.models
 from django.db import migrations, models
-
+from api.infrastructure.models import generate_unique_code
 
 class Migration(migrations.Migration):
 
@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 (
                     "code",
                     models.CharField(
-                        default=api.models.generate_unique_code,
+                        default=generate_unique_code,
                         max_length=8,
                         unique=True,
                     ),
